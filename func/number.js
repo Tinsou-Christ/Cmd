@@ -175,6 +175,42 @@ const numbers = {
     return text.split('').map(char => frakturMap[char] || char).join('');
   },
 
+  format: (n, options = {}) => {
+    const decimals = options.decimals != null ? options.decimals : 2;
+    const compact = options.compact !== false;
+
+    if (n == null || isNaN(n)) return '0';
+    n = Number(n);
+    if (!isFinite(n)) return 'infinity';
+
+    const neg = n < 0 ? '-' : '';
+    const abs = Math.abs(n);
+
+    if (compact) {
+      const scales = [
+        { v: 1e15, s: 'Qa' }, { v: 1e12, s: 'T' }, { v: 1e9, s: 'B' },
+        { v: 1e6, s: 'M' }, { v: 1e3, s: 'K' }
+      ];
+      const scale = scales.find(s => abs >= s.v);
+      if (scale) {
+        const value = (abs / scale.v).toFixed(2).replace(/\.00$/, '');
+        return `${neg}${value}${scale.s}`;
+      }
+    }
+
+    const isWhole = Number.isInteger(abs);
+    const useDecimals = isWhole ? 0 : decimals;
+    const parts = abs.toFixed(useDecimals).split('.');
+    parts[0] = parts[0].replace(/\B(?=(\d{3})+(?!\d))/g, ',');
+    return `${neg}${useDecimals > 0 ? parts.join('.') : parts[0]}`;
+  },
+
+  money: (n, fontType = 'bold', options = {}) => {
+    const symbol = options.symbol != null ? options.symbol : '$';
+    const formatted = numbers.format(n, options);
+    return `${symbol}${numbers.apply(fontType, formatted)}`;
+  },
+
   apply: (fontType, text) => {
     if (text == null) return '';
     text = String(text);
@@ -186,9 +222,8 @@ const numbers = {
   },
 
   list: () => {
-    return Object.keys(numbers).filter(key => typeof numbers[key] === 'function' && key !== 'apply' && key !== 'list');
+    return Object.keys(numbers).filter(key => typeof numbers[key] === 'function' && key !== 'apply' && key !== 'list' && key !== 'format' && key !== 'money');
   }
 };
 
 module.exports = numbers;
-      
